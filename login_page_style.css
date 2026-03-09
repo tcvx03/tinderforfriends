@@ -1,0 +1,29 @@
+.box {
+            width: 200px;
+            border: 2px solid black;
+            padding: 10px;
+            margin: auto;
+            margin-top: 100px;
+            background:#cfdee6;
+            display:flex;
+}
+
+body {
+    font-family:'Trebuchet MS';
+    background-image: linear-gradient(to right, #4facfe, #00f2fe);
+    margin:auto;
+}
+
+input {
+    margin:10px;
+}
+
+/* .button {
+    display:flex;
+    width:200px;
+    align-items: center;
+}
+
+.subButton {
+    margin:auto;
+} */
