@@ -18,6 +18,9 @@ input {
     margin:10px;
 }
 
+p {
+    font-size: x-small;
+}
 /* .button {
     display:flex;
     width:200px;

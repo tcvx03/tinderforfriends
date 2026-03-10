@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta description="Tinder for Friends - Login">
+    
+    <meta keywords="tinder, for, friends, find, online, in, person, login, log, sign, t4f, where, how, to, do, i">
+    <!-- We'll focus more on keywords once done coding -->
+    
     <link rel="stylesheet" href="login_page_style.css">
 </head>
 <body>
@@ -10,12 +17,13 @@
         <!-- image of our logo with a link to the homepage -->
     </header>
     <div class="box">
-        <form>
+        <form name="login_form">
             Username
-            <input type="text"/>
+            <input type="text" id="username_input"/>
             Password
-            <input type="text"/>
-            <input type="submit" value="Login">
+            <input type="text" id="password_input"/>
+            <input type="submit" value="Login" id="form_submit_button">
+            <p>No account? <a href="sign_in_page.html">Sign Up</a></p>
         </form>
     </div>
 </body>
