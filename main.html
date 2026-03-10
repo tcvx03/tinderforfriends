@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tinder for Friends</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+
+  <style>
+    /* ── Reset ──────────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ── Tokens ─────────────────────────────────────────── */
+    :root {
+      --bg:         #E8E2D6;
+      --text:       #3A3330;
+      --text-light: #C0B9AE;
+      --surface:    #D0C9BC;
+      --accent:     #5C2222;
+    }
+
+    ::selection { background: rgba(58,51,48,0.12); }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Nav ────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 1.2rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(232,226,214,0.55);
+      backdrop-filter: blur(40px) saturate(1.8);
+      -webkit-backdrop-filter: blur(40px) saturate(1.8);
+      transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.4s ease;
+    }
+    nav::after {
+      content: '';
+      position: absolute;
+      bottom: -24px;
+      left: 0; right: 0;
+      height: 24px;
+      background: linear-gradient(to bottom, rgba(232,226,214,0.35), transparent);
+      pointer-events: none;
+    }
+    nav.nav-hidden {
+      transform: translateY(calc(-100% - 24px));
+    }
+
+    .logo {
+      display: inline-block;
+      padding: 0.45rem 1.1rem;
+      border: 1.5px solid var(--text);
+      border-radius: 100px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .logo em {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .nav-btn {
+      display: inline-block;
+      padding: 0.45rem 1.1rem;
+      border: 1.5px solid var(--text);
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+    }
+    .nav-btn:hover {
+      background: var(--text);
+      color: var(--bg);
+    }
+    nav.scrolled {
+      box-shadow: 0 1px 20px rgba(58,51,48,0.06);
+    }
+
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      overflow: hidden;
+    }
+
+    .hero-headline {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 8.5vw, 9rem);
+      font-weight: 400;
+      line-height: 1.15;
+      max-width: 1200px;
+      margin-bottom: 3rem;
+      transform: translateY(-1.2rem);
+      position: relative;
+      z-index: 1;
+    }
+    .hero-headline em { font-style: italic; }
+
+    .h-line { display: block; }
+    .hero-word {
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .hero-char {
+      display: inline-block;
+      will-change: transform, opacity;
+    }
+
+    /* Hero blob canvas — organic gradient blobs */
+    #hero-blob-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      filter: blur(80px);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .hero-btn {
+      position: relative;
+      z-index: 1;
+      padding: 1.3rem 3.5rem;
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 0.01em;
+      opacity: 0;
+      transform: translateY(20px);
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+                  box-shadow 0.4s,
+                  background 0.3s;
+    }
+    .hero-btn:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 12px 40px rgba(58,51,48,0.18);
+    }
+    .hero-btn:active {
+      transform: translateY(0) scale(0.97) !important;
+    }
+
+    /* ── Manifesto ──────────────────────────────────────── */
+    .manifesto {
+      padding: 14vh 2rem 16vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .manifesto-text {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.5rem, 4.2vw, 3.6rem);
+      font-weight: 400;
+      line-height: 1.3;
+      text-align: center;
+      max-width: 1000px;
+    }
+
+    /* ── Scroll Words ──────────────────────────────────── */
+    .scroll-word { display: inline; }
+
+    /* ── Comparison ─────────────────────────────────────── */
+    .comparison {
+      padding: 8vh 3rem 12vh;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .comparison-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+      font-weight: 400;
+      line-height: 1.35;
+      margin-bottom: 4rem;
+    }
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: end;
+    }
+    .comp-value { margin-bottom: 1.2rem; }
+    .comp-num {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(3rem, 7vw, 6rem);
+      font-weight: 400;
+      line-height: 1;
+    }
+    .comp-unit {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      margin-left: 0.2rem;
+    }
+    .comp-bar {
+      width: 100%;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      transform-origin: bottom;
+      transform: scaleY(0);
+      will-change: transform;
+    }
+
+    .bar-scrolling {
+      height: 360px;
+      background: var(--accent);
+    }
+    .bar-talking {
+      height: 90px;
+      background: var(--text);
+    }
+    .comp-label {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.2rem, 2vw, 1.6rem);
+      margin-bottom: 0.3rem;
+    }
+    .comp-sublabel {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+    }
+    .comparison-col:first-child .comp-sublabel { color: var(--accent); }
+
+    /* ── Globe Section ──────────────────────────────────── */
+    .globe-section {
+      position: relative;
+      padding: 14vh 2rem 0;
+      overflow: hidden;
+    }
+    .globe-text {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.5rem, 4.2vw, 3.6rem);
+      font-weight: 400;
+      line-height: 1.3;
+      text-align: center;
+      max-width: 1000px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+    .globe-container {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      height: 70vh;
+      margin: 0 auto 0;
+      z-index: 1;
+    }
+    .globe-container::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 55%;
+      height: 55%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(180,200,210,0.15) 0%, rgba(180,200,210,0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    #globe-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: sepia(0.15) saturate(0.75) brightness(1.65) contrast(0.82);
+    }
+
+    /* ── FAQ ─────────────────────────────────────────────── */
+    .faq-wrapper { padding: 2rem 0; }
+
+    .faq-panel {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 6rem 3rem 4rem;
+      max-width: 100%;
+      margin: 0;
+      transition: border-radius 0.05s linear, margin 0.05s linear;
+      will-change: border-radius, margin;
+    }
+    .faq-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 400;
+      line-height: 1.1;
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+    .faq-list {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      border-top: 1px solid rgba(58,51,48,0.15);
+    }
+    .faq-item:last-child {
+      border-bottom: 1px solid rgba(58,51,48,0.15);
+    }
+    .faq-question {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text);
+      gap: 1rem;
+    }
+    .faq-question {
+      transition: padding-left 0.3s ease;
+    }
+    .faq-question:hover {
+      padding-left: 0.5rem;
+    }
+    .faq-toggle {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: rgba(58,51,48,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.3rem;
+      font-weight: 300;
+      line-height: 1;
+      transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1),
+                  background 0.3s;
+      user-select: none;
+    }
+    .faq-item.open .faq-toggle {
+      transform: rotate(45deg);
+      background: rgba(58,51,48,0.15);
+    }
+    .faq-answer {
+      height: 0;
+      overflow: hidden;
+      opacity: 0;
+    }
+    .faq-answer p {
+      padding-bottom: 1.5rem;
+      font-size: 0.95rem;
+      line-height: 1.65;
+      color: rgba(58,51,48,0.65);
+      font-weight: 300;
+    }
+    .faq-epilogue {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.05rem;
+      text-align: center;
+      color: var(--text-light);
+      margin-top: 3rem;
+    }
+
+    /* ── Eagle ───────────────────────────────────────────── */
+    .eagle-section {
+      padding: 6rem 2rem 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 6rem);
+    }
+    .eagle-img {
+      max-width: 520px;
+      width: 55%;
+      height: auto;
+      transform-origin: center center;
+      will-change: transform, opacity;
+    }
+
+    /* ── Footer ──────────────────────────────────────────── */
+    footer {
+      padding: 1rem 3rem 2rem;
+      text-align: center;
+    }
+    .footer-rule {
+      border: none;
+      border-top: 1px solid rgba(58,51,48,0.15);
+      max-width: 1100px;
+      margin: 0 auto 1rem;
+    }
+    .footer-credit {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+    .footer-credit a {
+      color: var(--text);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .footer-final {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 0.88rem;
+      font-weight: 400;
+      color: var(--text-light);
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Toast ────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text);
+      color: var(--bg);
+      padding: 0.85rem 1.8rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 200;
+      transition: opacity 0.4s, transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Responsive ──────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.2rem; }
+      .hero { padding: 5rem 1.5rem 3rem; }
+      .hero-headline { margin-bottom: 2rem; }
+      .hero-btn { padding: 1.1rem 2.5rem; font-size: 1rem; }
+      .manifesto { padding: 10vh 1.5rem 12vh; }
+      .comparison { padding: 6vh 1.5rem 8vh; }
+      .comparison-grid { gap: 2rem; }
+      .bar-scrolling { height: 220px; }
+      .bar-talking { height: 60px; }
+      .faq-panel { padding: 4rem 1.5rem 3rem; }
+      .globe-container { height: 50vh; }
+      .globe-section { padding-top: 10vh; }
+      .eagle-img { width: 65%; }
+    }
+    @media (max-width: 480px) {
+      .comparison-grid { grid-template-columns: 1fr; }
+      .faq-wrapper { padding: 1rem 0.75rem; }
+      .eagle-img { width: 75%; }
+    }
+
+    /* ── No-JS fallback ──────────────────────────────────── */
+    noscript .hero-char { opacity: 1 !important; transform: none !important; }
+    noscript .hero-btn { opacity: 1 !important; transform: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav ─────────────────────────────────────── -->
+  <nav>
+    <span class="logo">tinder <em>for friends</em></span>
+    <a href="#" class="nav-btn">Start matching</a>
+  </nav>
+
+  <!-- ── Hero ────────────────────────────────────── -->
+  <section class="hero">
+    <canvas id="hero-blob-canvas"></canvas>
+
+    <h1 class="hero-headline">
+      <span class="h-line">Strangers are just</span>
+      <span class="h-line"><em>friends</em> you're too</span>
+      <span class="h-line">scared to meet.</span>
+    </h1>
+
+    <button class="hero-btn">Find a human</button>
+  </section>
+
+  <!-- ── Manifesto ───────────────────────────────── -->
+  <section class="manifesto">
+    <p class="scroll-reveal-text manifesto-text">
+      You're lonely and it's embarrassing. Not sad-movie lonely. Sitting-in-your-room-on-a-Friday-pretending-you-chose-this lonely. You have a phone full of contacts and nobody to call. That's fucked.
+    </p>
+  </section>
+
+  <!-- ── Comparison ──────────────────────────────── -->
+  <section class="comparison">
+    <p class="comparison-title">
+      <em>Time spent scrolling vs.<br>Time spent talking to someone</em>
+    </p>
+
+    <div class="comparison-grid">
+      <div class="comparison-col">
+        <div class="comp-value">
+          <span class="comp-num">4.5 hrs</span><span class="comp-unit">/day</span>
+        </div>
+        <div class="comp-bar bar-scrolling"></div>
+        <div class="comp-label">Scrolling</div>
+        <div class="comp-sublabel">Daily average</div>
+      </div>
+
+      <div class="comparison-col">
+        <div class="comp-value">
+          <span class="comp-num">12 min</span><span class="comp-unit">/day</span>
+        </div>
+        <div class="comp-bar bar-talking"></div>
+        <div class="comp-label">Talking</div>
+        <div class="comp-sublabel">With a friend</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Globe Section ───────────────────────────── -->
+  <section class="globe-section">
+    <p class="scroll-reveal-text globe-text">
+      Press a button. Get a person. Show up. We didn't build a social network. We built a door. Walk through it.
+    </p>
+    <div class="globe-container">
+      <canvas id="globe-canvas"></canvas>
+    </div>
+  </section>
+
+  <!-- ── FAQ ─────────────────────────────────────── -->
+  <section class="faq-wrapper">
+    <div class="faq-panel">
+      <h2 class="faq-title">Frequently Asked<br>Questions</h2>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>What if I don't like my match?</span>
+            <span class="faq-toggle">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>Then you had a 20 minute conversation with a stranger and survived. Congratulations. That's called being a person.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>What if it's awkward?</span>
+            <span class="faq-toggle">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>It will be. That's how every good friendship starts. Name one best friend you met smoothly.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Can I see who I'm matching with first?</span>
+            <span class="faq-toggle">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>No. You'd do what you always do. Judge, filter, reject, move on, repeat, stay alone. We took that option away. You're welcome.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Is this a dating app?</span>
+            <span class="faq-toggle">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>No. But honestly, half of the best relationships start as friendships anyway, so who knows. We're not your mom. We just got you in the room.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>What if this doesn't work?</span>
+            <span class="faq-toggle">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>Then you're exactly where you started. Alone on your phone. Reading an FAQ instead of talking to someone. The difference is you could press the button right now and find out. Or you could keep scrolling.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="faq-epilogue">You're still scrolling aren't you.</p>
+    </div>
+  </section>
+
+  <!-- ── Eagle ───────────────────────────────────── -->
+  <section class="eagle-section">
+    <img src="Tinder for Friends.png" alt="Tinder for Friends" class="eagle-img">
+  </section>
+
+  <!-- ── Footer ──────────────────────────────────── -->
+  <footer>
+    <hr class="footer-rule">
+    <p class="footer-credit">DESIGNED AND ENGINEERED BY <a href="https://abiggenius.com" target="_blank" rel="noopener">ABIGGENIUS CORP</a></p>
+    <p class="footer-final">You miss people. Go find them.</p>
+  </footer>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">Coming soon. We're not ready. But we're close.</div>
+
+  <noscript>
+    <style>
+      .hero-char { opacity: 1 !important; transform: none !important; }
+      .hero-btn { opacity: 1 !important; transform: none !important; }
+      .scroll-reveal-text { color: var(--text) !important; }
+    </style>
+  </noscript>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
