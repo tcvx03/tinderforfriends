@@ -1,0 +1,47 @@
+body{
+font-family: Arial;
+max-width: 600px;
+margin: auto;
+background: linear-gradient(to right, #4facfe, #00f2fe);
+}
+
+.chat{
+border:1px solid #ccc;
+height:300px;
+overflow-y:scroll;
+padding:10px;
+display:flex;
+flex-direction:column;
+gap:8px;
+background:white;
+border-radius:10px;
+}
+
+.message{
+display:flex;
+flex-direction:column;
+max-width:70%;
+}
+
+.timestamp{
+font-size:11px;
+color:gray;
+margin-bottom:2px;
+}
+
+.bubble{
+padding:10px 14px;
+border-radius:15px;
+background:#e5e5ea;
+width:fit-content;
+}
+
+.mine{
+align-self:flex-end;
+text-align:right;
+}
+
+.mine .bubble{
+background:#007aff;
+color:white;
+}

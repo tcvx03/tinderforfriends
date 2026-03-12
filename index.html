@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Messaging</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<h2>Messaging App</h2>
+
+<label>Your User ID:</label>
+<input type="text" id="myId"><br><br>
+
+<label>Other User ID:</label>
+<input type="text" id="otherId"><br><br>
+
+<button onclick="loadMessages()">Load Conversation</button>
+
+<div id="messages" class="chat"></div>
+
+<input type="text" id="messageInput" placeholder="Type a message">
+<button onclick="sendMessage()">Send</button>
+
+<script>
+    const SUPABASE_URL = "https://exoxwnkwocaybyhewqdh.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_05d_O3W3Ayg5XfYmnOAAtA_FFzq-CiD";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function loadMessages() {
+        const myId = document.getElementById("myId").value;
+        const otherId = document.getElementById("otherId").value;
+
+        const { data: messages, error } = await client
+            .from("messages")
+            .select("*")
+            .or(`and(sender.eq.${myId},receiver.eq.${otherId}),and(sender.eq.${otherId},receiver.eq.${myId})`)
+            .order("timestamp", { ascending: true });
+
+        if (error) {
+            console.error("Error loading messages:", error);
+            return;
+        }
+
+        const container = document.getElementById("messages");
+        container.innerHTML = "";
+
+        messages.forEach(msg => {
+            const message = document.createElement("div");
+            message.classList.add("message");
+
+            if (msg.sender === myId) {
+                message.classList.add("mine");
+            }
+
+            const timestamp = document.createElement("div");
+            timestamp.classList.add("timestamp");
+            const time = new Date(msg.timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+            timestamp.textContent = time;
+
+            const bubble = document.createElement("div");
+            bubble.classList.add("bubble");
+            bubble.textContent = msg.content;
+
+            message.appendChild(timestamp);
+            message.appendChild(bubble);
+            container.appendChild(message);
+        });
+
+        container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const myId = document.getElementById("myId").value;
+        const otherId = document.getElementById("otherId").value;
+        const content = document.getElementById("messageInput").value;
+
+        if (content !== "") {
+            const { error } = await client.from("messages").insert([{
+                sender: myId,
+                receiver: otherId,
+                content: content,
+                timestamp: Date.now()
+            }]);
+
+            if (error) {
+                console.error("Error sending message:", error);
+                return;
+            }
+
+            document.getElementById("messageInput").value = "";
+            input.focus();
+            loadMessages();
+        }
+    }
+
+    // Auto-refresh every 3 seconds
+    setInterval(() => {
+        const myId = document.getElementById("myId").value;
+        const otherId = document.getElementById("otherId").value;
+        if (myId && otherId) loadMessages();
+    }, 3000);
+
+    const input = document.getElementById("messageInput");
+    input.addEventListener("keypress", (e) => {
+        if (e.charCode == 13) sendMessage();
+    });
+</script>
+
+</body>
+</html>
